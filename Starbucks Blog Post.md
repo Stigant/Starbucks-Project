@@ -175,7 +175,7 @@ The offers that Starbucks sent out are as follows. The reward is the value of pr
 
 There is a large peak of users with age 118, this must be a placeholder for no entry.
 
-<img src="Starbucks_Capstone_notebook_files/Starbucks_Capstone_notebook_6_1.png" alt="png" style="zoom:150%;" />
+<img src="Starbucks_Capstone_notebook_files/Starbucks_Capstone_notebook_6_0.png" alt="png" style="zoom:150%;" />
 
 If we see these ages to NaN we see that they correspond to users for whom the gender and income is also missing. There's about 2000 of these people for whom we have basically no user data. We'll just drop them from the DataFrame.
 
