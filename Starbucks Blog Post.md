@@ -1,8 +1,8 @@
-# Starbucks Capstone Challenge
+# Starbucks Capstone Project Blog
 
 <h2> Project Overview </h2> 
 
-
+As part of my Udacity Capstone project, I have to write a blog post detailing my work on the problem. This is that post.
 
 The aim of the project is to develop a strategy for giving offers (like discounts or bogoffs) to user of the Starbucks rewards app.
 
@@ -10,18 +10,31 @@ The main way this will be done is building a classification model to determine t
 
 The data set is imbalanced, particularly the viewed/not viewed classes, and so performance of the model will be measured by it's f1-scores on each class. Since the model will be used to output estimates of probabilities it is important that the model performs well on both positive and negative classes.
 
+The strategy itself will need real world testing to evaluate. There is some discussion of this in the conclusion.  
 
+The code and datasets for this blog are available [here](https://github.com/Stigant/Starbucks-Project).
 
-<H2> Data Exploration </H2>
+<H2> Data Preperation</H2>
 
 <b> Offers </b>
 
 The offers that Starbucks sent out are as follows. The reward is the value of product for a bogoff and value of the discount otherwise. Similarly the difficulty is the required spend to complete the offer.
 
+The data is contained in the file **portfolio.json** which has the following schema.
+
+- id (String) - offer id
+- offer_type (String) - type of offer ie BOGO, discount, informational
+- difficulty (Int) - minimum required spend to complete an offer
+- reward (Int) - reward given for completing an offer
+- duration (Int) - time for offer to be open, in days
+- channels (List of Strings)
+
+Dummy variables were used for the channels and the offers were given a simplified name, resulting in the following portfolio.
+
 <table border="1" class="dataframe">
   <thead>
     <tr style="text-align: center;">
-      <th></th>
+      <th>Offer ID</th>
       <th>Reward</th>
       <th>Difficulty</th>
       <th>Duration</th>
@@ -32,19 +45,6 @@ The offers that Starbucks sent out are as follows. The reward is the value of pr
       <th>Web</th>
       <th>Name</th>
     </tr>
-    <tr>
-      <th>offer_id</th>
-      <th></th>
-      <th></th>
-      <th></th>
-      <th></th>
-      <th></th>
-      <th></th>
-      <th></th>
-      <th></th>
-      <th></th>
-    </tr>
-  </thead>
   <tbody>
     <tr>
       <th>9b98b8c7a33c4b65b9aebfe6a799e6d9</th>
@@ -169,15 +169,51 @@ The offers that Starbucks sent out are as follows. The reward is the value of pr
   </tbody>
 </table>
 
+<b> Events and Offers </b>
+
+All the events - offers received, viewed or completed as well as transactions are recorded in a single file - **transcript.json**. The columns available were
+
+- event (String) - record description (ie transaction, offer received, offer viewed, etc.)
+- person (String) - customer id
+- time (Int) - time in hours since start of test. The data begins at time t=0
+- value - (Dict of Strings) - either an offer id or transaction amount depending on the record
+
+The rows of the frame look like the following:
+
+| Person                           | Event           | Value                                            | Time |
+| -------------------------------- | --------------- | ------------------------------------------------ | ---- |
+| 78afa995795e4d85b5d9ceeca43f5fef | Offer Received  | {'offer id': '9b98b8c7a33c4b65b9aebfe6a799e6d9'} | 0    |
+| 389bc3fa690240e798340f5a15918d5c | Offer Viewed    | {'offer id': 'f19421c1d4aa40978ebb69ca19b0e20d'} | 0    |
+| 9fa9ae8f57894cc9a3b8a9bbe0fc1b2  | Offer Completed | {'offer_id': '2906b810c7d4411798c6938adc9daaa5'} | 0    |
+| 02c083884c7d45b39cc68e1314fec56c | Transaction     | {'amount': 0.8300000000000001}                   | 0    |
+
+Most of the pre-processing for the model was needed here.
+
+These needed to be assembled into frames for each event and were then aggregated further. Transactional information like mean spend, total spend and number of transactions was gathered and merged with the user data. It was also often necessary to pull this data for specific time periods. For example getting total spend during the period that a given offer was active.
+
+Some care was needed to match up offers received by a user to subsequent events like viewings or completions. A user might receive the same offer twice across the month, so it was necessary to ensure that these events occurred during the duration of the offer. The informational offers did not have a completion condition, so the offer was said to be completed if a transaction was made within the duration specified.
+
+It was important to keep the data on offer viewings because offers are redeemed automatically by the app. In particular someone might complete the offer without ever knowing they had been offered it, this is something we would like to avoid since they would have made the purchase anyway. It is not totally clear from the information provided exactly how this happens. For example if you complete a bogoff offer are you given a voucher for a free one next time? If not it is hard to see how you could unknowingly redeem the offer. 
+
+If it is the case then there does not appear to be transactional data relating to the redemption of such vouchers, this is information it would be useful to have when estimating the cost of providing an offer. In fact the only data on cost is the reward value of the offer, which is not ideal. It clearly does not cost Starbucks $10 to provide a free item with a menu cost of $10. 
+
 <b> User Profiles </b>
 
+The user profiles were contained in the file **profile.json** and contained the following entries.
 
+- age (Int) - age of the customer
+- became_member_on (Int) - date when customer created an app account
+- gender (String) - gender of the customer (note some entries contain 'O' for other rather than M or F)
+- id (String) - customer id
+- income (Float) - customer's income
 
-There is a large peak of users with age 118, this must be a placeholder for no entry.
+The became_member_on column was replaced by an account age field (in years). The gender labels were replaced with dummy Booleans. The transactional data aggregated from the previous file were also merged in.
 
-<img src="Starbucks_Capstone_notebook_files/Starbucks_Capstone_notebook_6_1.png" alt="png" style="zoom:150%;" />
+Unlike the other data sets some cleaning was needed here. There was a large peak of users with age 118, this must be a placeholder for no entry.
 
-If we see these ages to NaN we see that they correspond to users for whom the gender and income is also missing. There's about 2000 of these people for whom we have basically no user data. We'll just drop them from the DataFrame.
+<img src="Starbucks_Capstone_notebook_files/Starbucks_Capstone_notebook_6_0.png" alt="png" style="zoom:150%;" />
+
+If we set these ages to NaN, we see that they correspond to users for whom the gender and income is also missing. There's about 2000 of these people for whom we have basically no user data. We'll just drop them from the DataFrame.
 
 | Column           | Count |
 | ---------------- | ----- |
@@ -186,6 +222,8 @@ If we see these ages to NaN we see that they correspond to users for whom the ge
 | Became Member On | 0     |
 | Income           | 2175  |
 | Account Age      | 0     |
+
+<h2> Data Exploration </h2>
 
 If we do a bar plot of a user's spend in the training period we see that the modal spend is only a few dollars - likely the cost of a single coffee. It is not uncommon however for users to spend in the 10-20 dollar range, and higher spend become increasingly uncommon.
 
@@ -1570,8 +1608,6 @@ Ideally we would replace $P(\text{completed})*P(\text{not viewed})$ with $P(\tex
 
 Similarly reward is used as an estimate of the cost of providing the offer but it is not a perfect representative. It likely over-estimates the gain of discounts verses buy one get one free offers as the marginal cost of providing a second coffee is likely much lower than menu price.
 
-
-
 We use this to pick the top three offers, with no more than two of each type, for each user.
 
 The first few entries of the resulting DataFrame look like this.
@@ -1634,14 +1670,21 @@ The discount,2,10,10 offer appears a lot in these rows. In fact we can count the
 | Informational,0,0,4 | 0     |
 | Informational,0,0,3 | 0     |
 
+<h2> Conclusion </h2>
 
-
-By far and away the most suggested is the 2,10,10 discount. This is also the best performing offer according to the tentative analysis in the p-testing section which is reassuring. 
-
-We might also want to combine these methods with other heuristics, like say never giving offers to people identified as big_spenders or sending a larger discount to people who haven't bought anything in a while. Conversely offers might be used to reward users who already spend a lot.
-
-It is also clear both from the poor performance of the model itself and the predictions made that informational offers have not been handled well. They are very different in nature to the other offers and there is room for more exploration of when and how to use these kinds of offers.
+By far and away the most suggested offer is the 2,10,10 discount. This is also the best performing offer according to the tentative analysis in the p-testing section which is reassuring. The decision making algorithm is a little crude. It could be improved with access to more data, like the cost of providing offer rewards. Given a larger data set we might also be able to make estimates of the conditional probabilities needed to give a more accurate estimate of offer gain. 
 
 Ultimately it isn't really possible to give a good measure of how effective this strategy is. This would require real world testing. An experiment could be run where different groups are given offers according to different strategies e.g. the method above, random allocation, everyone gets the same, etc. Performance could then be compared across groups and the best strategy could be found. 
 
 As well as running a one off experiment this could be done as a continuous process. Since the rewards app collects all the relevant data models could be constantly updated and different A/B tests run each month with tweaked offer strategies in order to keep improving the performance.
+
+We can of course evaluate the model performance according the the f1-score we highlighted as a metric at the beginning. It's difficult to say whether a model is good or bad in a vacuum, based only on its scores, but the overall performance was respectable. The the grid search implementation, the SMOTE sampling and the decision to build a separate model for each offer all improved the scores from the base Random Forest Implementation. In particular this increased the Not Viewed f1-score (which was the worst) from about 0.64 to 0.73. This was driven by better scores in both recall and precision.
+
+There were also noticeable, if less dramatic, improvements in the other f1-scores. 
+
+It is also clear both from the poor performance of the model itself and the predictions made that informational offers have not been handled well. They are very different in nature to the other offers and there is room for more exploration of when and how to use these kinds of offers.
+
+As mentioned at the beginning, what is really missing here is a good estimate of the impact on a user's spend of receiving an offer. It is clear from the p-testing section that there is a benefit to sending out an offer beyond just that realised by an additional purchase to redeem the offer. For example the 2,10,10 discount led to an increase in mean number of transactions from 1 to 3, and the total spend rose by over $30 as a result.
+
+Finally there is scope for development of additional heuristics. Partly these depend on company goals. For example we might want to avoid sending offers to big spenders on the basis we think they are unlikely to be swayed by them. Conversely we might want to send offers to regular users, even if they would make the purchases anyways, in order to increase brand loyalty and retain their custom. 
+
