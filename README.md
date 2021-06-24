@@ -9,7 +9,9 @@ The aim of ths project was to use a months worth of data to create a strategy fo
     * portfolio.json - Data on offers sent out by Starbucks
     * profile.json - User data for offer recipients
     * transcript.json - Transaction and offer data for all users 
-2. Starbucks_Capstone_notebook.ipynb - Jupytier notebook containg the project
+2. Starbucks_Capstone_notebook.ipynb - Jupytier notebook containg the project code
+3. Starbucks_Capstone_notebook_files - Images from Jupyter
+4. Starbucks Blog Post.md - Blog post about project
 
 ## Dependencies
 This project uses Python 3.
