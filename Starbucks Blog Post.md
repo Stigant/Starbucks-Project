@@ -8,6 +8,8 @@ The aim of the project is to develop a strategy for giving offers (like discount
 
 The main way this will be done is building a classification model to determine the likelihood of a user viewing or completing an offer. Ideally we would also try to estimate how a user's spend would be impacted by an offer, or combination of offers, unfortunately this does not appear to be a tractable machine learning problem. At least with the data available.
 
+Treating this as a classification problem is a very natural approach. It also offers a lot of flexibility and be easily combined with subsequent work on other aspects of the problem.
+
 The data set is imbalanced, particularly the viewed/not viewed classes, and so performance of the model will be measured by it's f1-scores on each class. Since the model will be used to output estimates of probabilities it is important that the model performs well on both positive and negative classes.
 
 The strategy itself will need real world testing to evaluate. There is some discussion of this in the conclusion.  
@@ -710,7 +712,7 @@ Noticeably there was an increase in both mean spend and number of transactions a
 
 
 While all the measures are deemed effective by our p_tests, there does seem to be differences in performance. Roughly speaking it looks like the 2,10,10 discount performs best, but comparing the offers like this is on shaky statistical footing. There may be other factors impacting performance, e.g. people might be more likely to buy coffee on a Monday, so offers which include a (or multiple) Mondays might get a boost. 
-   
+
 
 <h2> Offer Classification </h2>
 
@@ -741,7 +743,11 @@ param_grid={
 }
 ```
 
-The best parameters are then used to refit a model on the entire test set. 
+Other than these parameters the default sklearn options were used. This was largely due to computational limits. With a different model for each offer running extensive grid searches is very time consuming, especially on basic hardware.
+
+The problem is a mulit-output classification one and therefore we can choose to run the grid search for a single multioutput classifier, or the search can be run on each output separately. The second option was chosen as it improved performance and with only two outputs it isn't too difficult to do so. The grids evaluated parameters by their f1-score across three cross validations.
+
+The best parameters are then used to refit a model on the entire test set.
 
 We collect the results for each offer below.
 
@@ -1058,7 +1064,7 @@ Recall on classes with low support is predictably poor despite the resampling. T
 
 <b> Random Forest Model - Alternative prediction methods </b>
 
-Once again a grid search was run before a model was refit on the entire training set. This time the parameter grid was slightly expanded  since there are fewer models to build.
+Once again a grid search was run on each output before a model was refit on the entire training set. This time the parameter grid was slightly expanded since there are fewer models to build. 
 
 
 ```python
@@ -1068,6 +1074,10 @@ param_grid={
     'min_samples_leaf':np.logspace(-6,-2,5),
 }
 ```
+
+The other parameters are left as the default once again. This is mainly to ensure a fair test of the methods, though fit time is also a concern here especially with the expanded parameter grid.
+
+Because the Completed class is less unbalanced for some of these aggregated sets, so SMOTE sampling was less clearly needed. The performance differences were very small however, and it was much easier to pick a single option. With a bit of work this could have been included as parameter in the grid search however, which would have been a good option to eke out a bit of extra performance if one of these methods were to be chosen.   
 
 To compare these models we consider their combined performance by offer type as well as their overall performance. A breakdown by offer is also possible but it is difficult to read such a large table and meaningfully interpret the results. 
 
@@ -1413,7 +1423,7 @@ That being said they offer a degree of flexibility that the offer by offer does 
 
 <b> Alternative Model Testing </b>
 
-Just as a sanity check, we can see how other types of model perform to confirm the choice of a random forest was sensible.  For speed and ease of comparison we use the models to predict against all the offers at once. We also don't use a grid search and add a standard scaler to the Pipeline. The models tested are as follows.
+Just as a sanity check, we can see how other types of model perform to confirm the choice of a random forest was sensible.  For speed and ease of comparison we use the models to predict against all the offers at once. We also don't use a grid search and add a standard scaler to the Pipeline. The models tested are as follows. Only a quick reference was sought, so all models were run with their default setups. As usual this was also done to keep computational time down.
 
 | Models                       | Initial |
 | ---------------------------- | ------- |
@@ -1686,5 +1696,13 @@ It is also clear both from the poor performance of the model itself and the pred
 
 As mentioned at the beginning, what is really missing here is a good estimate of the impact on a user's spend of receiving an offer. It is clear from the p-testing section that there is a benefit to sending out an offer beyond just that realised by an additional purchase to redeem the offer. For example the 2,10,10 discount led to an increase in mean number of transactions from 1 to 3, and the total spend rose by over $30 as a result.
 
-Finally there is scope for development of additional heuristics. Partly these depend on company goals. For example we might want to avoid sending offers to big spenders on the basis we think they are unlikely to be swayed by them. Conversely we might want to send offers to regular users, even if they would make the purchases anyways, in order to increase brand loyalty and retain their custom. 
+There is also scope for development of additional heuristics. Partly these depend on company goals. For example we might want to avoid sending offers to big spenders on the basis we think they are unlikely to be swayed by them. Conversely we might want to send offers to regular users, even if they would make the purchases anyways, in order to increase brand loyalty and retain their custom. 
 
+Some key areas for future work are as follows:
+
+* Better identify underlying relationships in the data
+  * Who are social media offers most effective on? 
+  * Do any users react negatively to receiving offers?
+* Investigate the use of ensemble models to improve performance
+  * Train alternative models like  Linear Regression and K-means and combine the output
+  * Train models in different ways like Type by Type or All at Once and combine
