@@ -2,7 +2,7 @@
 
 The aim of ths project was to use a months worth of data to create a strategy for sending offers to customers based on data collected by a mobile app. This includes demographics data like age and gender, as well as spend and offer history. I built a model to predict if a given person would view or complete an offer which was then used to make decisions about what offers should be sent out. All the data was provided by Starbucks as part of the Udacity Capstone Project.
 
-A full description of the project is given in the blog post.
+A full description of the project is given in the blog post. This is available as markdown file in this repository or as a proper blog post [here](https://stigant.github.io/Blog/2021/06/24/Starbucks.html). 
 
 <h2> Files </h2>
 
