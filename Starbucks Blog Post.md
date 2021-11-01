@@ -365,7 +365,7 @@ $$
     
 
 
-The poor fit towards the end is likely due, at least in part, to fewer people being offered the such large max rewards.
+The poor fit towards the end is likely due, at least in part, to fewer people being offered such large max rewards.
 
 <h2> P_testing Offer Effectiveness </h2>
 
@@ -1614,7 +1614,7 @@ P(\text{completed})*(\text{difficulty}-P(\text{not viewed})*\text{reward}).
 $$
 
 
-Ideally we would replace $P(\text{completed})*P(\text{not viewed})$ with $P(\text{not viewed}| \text{completed})$ but since estimation of whether an offer would be viewed was already fairly poor, I worried such an estimate would be very inaccurate.
+Ideally we would replace $P(\text{not viewed})$ with $P(\text{not viewed} | \text{completed})$ but since estimation of whether an offer would be viewed was already fairly poor, I worried such an estimate would be very inaccurate.
 
 Similarly reward is used as an estimate of the cost of providing the offer but it is not a perfect representative. It likely over-estimates the gain of discounts verses buy one get one free offers as the marginal cost of providing a second coffee is likely much lower than menu price.
 
